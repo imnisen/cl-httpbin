@@ -1,0 +1,88 @@
+* <2017-10-10 Tue>
+了解了一个库用来模拟python中的generator, 打算用来模仿实现stream/<int:n> 路由
+实际做的过程中发现直接返回生成器可能不行（没有深入研究），就手动调用成平成字符串返回了（其实这种情况下根本不需要先定义生成器了，但这里权当是练习了）。
+
+在完成/status/:codes的时候，写status-code函数的时候，自定义了my-sethash来简化对hashtable设置值的操作，但传参的方式遇到一些问题，打算找个时间弄懂下
+* <2018-01-10 Wed>
+#+BEGIN_SRC sample
+
+
+lack
+(defstruct (request (:constructor %make-request))
+  env
+
+  method
+  script-name
+  path-info
+  server-name
+  server-port
+  server-protocol
+  uri
+  remote-addr
+  remote-port
+  query-string
+  raw-body
+  content-length
+  content-type
+  headers
+
+  cookies
+  body-parameters
+  query-parameters)
+
+
+(defstruct (response
+            (:constructor make-response (&optional status headers (body nil has-body)
+                                         &aux (no-body (not has-body)))))
+  status
+  headers
+  body
+  no-body
+  set-cookies)
+
+
+
+
+----
+-request
+get
+headers:
+  content-length
+  remote-addr
+  user-agent
+  content-type
+query-parameters
+env
+server-name
+server-port
+uri
+scheme
+url
+origin
+
+form
+method
+
+body-parameters
+
+files
+
+-set
+
+
+
+----
+response:
+-get
+
+-set
+
+headers:
+  content-type
+  content-encoding
+  status
+  location
+{}
+#+END_SRC
+
+整理结构
