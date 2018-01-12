@@ -31,4 +31,9 @@
   - State "CANCELED"   from ""           [2018-01-11 Thu 10:50] \\
     还没有找到类似python里那样from xxx import * 这样的用法
   :END:
-* 增加test模块,暂定使用prove
+* DONE 增加test模块,暂定使用prove
+  CLOSED: [2018-01-12 Fri 21:50]
+  :LOGBOOK:
+  - State "DONE"       from ""           [2018-01-12 Fri 21:50]
+  :END:
+* 完善已有url的相应测试案例

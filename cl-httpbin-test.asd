@@ -12,10 +12,12 @@
   :author "Nisen"
   :license "BSD"
   :depends-on (:cl-httpbin
-               :prove)
+               :prove
+               :dexador
+               :yason)
   :components ((:module "t"
-                :components
-                ((:test-file "cl-httpbin"))))
+                        :components
+                        ((:test-file "cl-httpbin"))))
   :description "Test system for cl-httpbin"
 
   :defsystem-depends-on (:prove-asdf)

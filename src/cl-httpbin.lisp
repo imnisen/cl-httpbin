@@ -267,8 +267,13 @@
 
 (defun start ()
   (init)
-  (setf *server*
-        (clack:clackup *app*)))
+  (if *server*
+      nil
+      (progn (setf *server*
+                   (clack:clackup *app*))
+             t)))
 
 (defun stop ()
-  (clack:stop *server*))
+  (if *server*
+      (progn (clack:stop *server*) (setf *server* nil) t)
+      nil))

@@ -4,8 +4,8 @@
 
 在完成/status/:codes的时候，写status-code函数的时候，自定义了my-sethash来简化对hashtable设置值的操作，但传参的方式遇到一些问题，打算找个时间弄懂下
 * <2018-01-10 Wed>
+整理request和response结构
 #+BEGIN_SRC sample
-
 
 lack
 (defstruct (request (:constructor %make-request))
@@ -84,5 +84,6 @@ headers:
   location
 {}
 #+END_SRC
-
-整理结构
+* <2018-01-12 Fri>
+添加测试框架
+添加部分readme
