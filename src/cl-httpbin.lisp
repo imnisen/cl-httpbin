@@ -10,11 +10,11 @@
 ;;; Route handlers
 ;;;
 
-;;; 手动import cl-httpbin.utils  里定义的symbol
-(let ((pack (find-package :cl-httpbin.utils)))
-  (do-all-symbols (sym pack)
-    (when (eql (symbol-package sym) pack)
-      (export sym))))
+;; ;;; 手动import cl-httpbin.utils  里定义的symbol
+;; (let ((pack (find-package :cl-httpbin.utils)))
+;;   (do-all-symbols (sym pack)
+;;     (when (eql (symbol-package sym) pack)
+;;       (export sym))))
 
 (defvar *app* (make-instance 'ningle:<app>))
 
@@ -26,6 +26,7 @@
                              :element-type 'character
                              :external-format :utf-8)))
 
+;; Returns Origin IP
 (setf (ningle:route *app* "/ip")
       #'(lambda (params)
           (declare (ignore params))
@@ -35,6 +36,7 @@
                   (gethash "x-forwarded-for" (get-request-headers) (get-request-remote-addr)))
             (json:encode-json-to-string h))))
 
+;; Returns HTTP HEADERS
 (setf (ningle:route *app* "/headers")
       #'(lambda (params)
           (declare (ignore params))
@@ -44,6 +46,7 @@
                   (get-request-headers))
             (json:encode-json-to-string h))))
 
+;; Returns User-Agent.
 (setf (ningle:route *app* "/user-agent")
       #'(lambda (params)
           (declare (ignore params))
@@ -53,12 +56,12 @@
                   (get-request-user-agent))
             (json:encode-json-to-string h))))
 
-
+;; Returns GET Data.
 (setf (ningle:route *app* "/get" :method :GET)
       #'(lambda (params)
           (declare (ignore params))
           (set-response-content-type "application/json")
-          (get-json-response "form" "headers" "args" "origin" "url")))
+          (get-json-response  "headers" "args" "origin" "url")))
 
 
 
@@ -265,12 +268,12 @@
 
 (defvar *server* nil)
 
-(defun start ()
+(defun start (&key (port 5000) )
   (init)
   (if *server*
       nil
       (progn (setf *server*
-                   (clack:clackup *app*))
+                   (clack:clackup *app* :port port))
              t)))
 
 (defun stop ()
