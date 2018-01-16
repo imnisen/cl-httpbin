@@ -1,10 +1,7 @@
 (in-package :cl-user)
 (defpackage cl-httpbin-test
   (:use :cl
-        :cl-httpbin
-        :prove
-        :yason
-        :dexador))
+        :prove))
 (in-package :cl-httpbin-test)
 
 ;; NOTE: To run this test file, execute `(asdf:test-system :cl-httpbin)' in your Lisp.
@@ -18,6 +15,20 @@
 (sleep 0.5)
 
 
+(defvar +user-agent+ "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/600.3.18 (KHTML, like Gecko) Version/8.0.3 Safari/600.3.18")
+(defvar +accept+ "*/*")
+(defvar +origin+ "127.0.0.1")
+(defvar +host+ "127.0.0.1:5000")
+(defvar +status-ok+ 200)
+(defvar +x-key1+ "x-key1")
+(defvar +x-key2+ "x-key2")
+(defvar +x-value1+ "x-value1")
+(defvar +x-value2+ "x-value2")
+(defvar +x-arg1+ "x-arg1")
+(defvar +x-arg2+ "x-arg2")
+(defvar +x-v1+ "x-v1")
+(defvar +x-v2+ "x-v2")
+
 
 
 ;; ;; html TODO read html and compare
@@ -27,57 +38,57 @@
 ;;   (is 1 1))
 
 
-(multiple-value-bind (body status)
-    (dex:get "http://127.0.0.1:5000/ip")
-  (is status 200 "status 200 ?")
-  (is "127.0.0.1" (gethash "origin" (yason:parse body)) "/ip: origin->127.0.0.1 ?"))
+(subtest "Testing /ip"
+  (multiple-value-bind (body status)
+      (dex:get "http://127.0.0.1:5000/ip")
+    (is status +status-ok+)
+    (is +origin+ (gethash "origin" (yason:parse body)))))
 
 
-
-(multiple-value-bind (body status)
-    (dex:get "http://127.0.0.1:5000/headers"
-             :headers '(("User-Agent" . "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/600.3.18 (KHTML, like Gecko) Version/8.0.3 Safari/600.3.18")
-                        ("Accept" . "*/*")
-                        ("x-key1" . "value1")
-                        ("x-key2" . "value2")))
-  (format t "~a" body)
-  (is status 200 "status 200 ?")
-  (let* ((body-json (yason:parse body))
-         (headers (gethash "headers" body-json)))
-    (is t (nth-value 1 (gethash "headers" body-json)) "/headers: have headers")
-    (is "127.0.0.1:5000" (gethash "host" headers) "/headers: headers->host->headers")
-    (is "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/600.3.18 (KHTML, like Gecko) Version/8.0.3 Safari/600.3.18" (gethash "user-agent" headers) "/headers: headers->user-agent->long-words")
-    (is "*/*" (gethash "accept" headers) "/headers: headers->accept-*/*")
-    (is "value1" (gethash "x-key1" headers) "/headers: headers->x-key1->value1")
-    (is "value2" (gethash "x-key2" headers) "/headers: headers->x-key2->value2")
-    ))
-
-
-(multiple-value-bind (body status)
-    (dex:get "http://127.0.0.1:5000/user-agent"
-             :headers '(("User-Agent" . "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/600.3.18 (KHTML, like Gecko) Version/8.0.3 Safari/600.3.18")))
-  (format t "~a" body)
-  (is status 200 "status 200 ?")
-  (let* ((body-json (yason:parse body)))
-    (is "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/600.3.18 (KHTML, like Gecko) Version/8.0.3 Safari/600.3.18" (gethash "user-agent" body-json) "/user-agent: headers->user-agent->long-words")))
+(subtest "Testing /headers"
+  (multiple-value-bind (body status)
+      (dex:get "http://127.0.0.1:5000/headers"
+               :headers `(("User-Agent" . ,+user-agent+)
+                          ("Accept" . "*/*")
+                          (,+x-key1+ . ,+x-value1+)
+                          (,+x-key2+ . ,+x-value2+)))
+    (format t "~a" body)
+    (is status +status-ok+)
+    (let* ((body-json (yason:parse body))
+           (headers (gethash "headers" body-json)))
+      (is t (nth-value 1 (gethash "headers" body-json)))
+      (is +host+ (gethash "host" headers))
+      (is +user-agent+ (gethash "user-agent" headers))
+      (is +accept+ (gethash "accept" headers))
+      (is +x-value1+ (gethash +x-key1+ headers))
+      (is +x-value2+ (gethash +x-key2+ headers)))))
 
 
-;; To finish
-;; (multiple-value-bind (body status)
-;;     (dex:get "http://127.0.0.1:5000/get?arg1=v1&arg2=v2"
-;;              :headers '(("User-Agent" . "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/600.3.18 (KHTML, like Gecko) Version/8.0.3 Safari/600.3.18")
-;;                         ("Accept" . "*/*")
-;;                         ("x-key1" . "value1")
-;;                         ("x-key2" . "value2")))
-;;   (format t "~a" body)
-;;   (is status 200 "status 200 ?")
-;;   (let* ((body-json (yason:parse body)))
-;;     (is "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/600.3.18 (KHTML, like Gecko) Version/8.0.3 Safari/600.3.18" (gethash "user-agent" body-json) "/get headers->user-agent->long-words")
-;;     (is "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/600.3.18 (KHTML, like Gecko) Version/8.0.3 Safari/600.3.18" (gethash "user-agent" body-json) "/get headers->user-agent->long-words")
-;;     (is "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/600.3.18 (KHTML, like Gecko) Version/8.0.3 Safari/600.3.18" (gethash "user-agent" body-json) "/get headers->user-agent->long-words")
-;;     (is "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/600.3.18 (KHTML, like Gecko) Version/8.0.3 Safari/600.3.18" (gethash "user-agent" body-json) "/get headers->user-agent->long-words")
-;;     (is "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/600.3.18 (KHTML, like Gecko) Version/8.0.3 Safari/600.3.18" (gethash "user-agent" body-json) "/get headers->user-agent->long-words")
-;;     ))
+(subtest "Testing /user-agent"
+  (multiple-value-bind (body status)
+      (dex:get "http://127.0.0.1:5000/user-agent"
+               :headers `(("User-Agent" . ,+user-agent+)))
+    (is status +status-ok+)
+    (let* ((body-json (yason:parse body)))
+      (is +user-agent+ (gethash "user-agent" body-json)))))
+
+(subtest "Testing /get"
+  (multiple-value-bind (body status)
+      (dex:get (format nil "http://127.0.0.1:5000/get?~a=~a&~a=~a" +x-arg1+ +x-v1+ +x-arg2+ +x-v2+)
+               :headers `(("User-Agent" . ,+user-agent+)
+                          ("Accept" . "*/*")
+                          (,+x-key1+ . ,+x-value1+)
+                          (,+x-key2+ . ,+x-value2+)))
+    (is status 200)
+    (let* ((body-json (yason:parse body)))
+      (is +origin+ (gethash "origin" body-json))
+      (is (format nil "http://127.0.0.1:5000/get?~a=~a&~a=~a" +x-arg1+ +x-v1+ +x-arg2+ +x-v2+) (gethash "url" body-json))
+      (is +x-v1+ (gethash +x-arg1+ (gethash "args" body-json)))
+      (is +x-v2+ (gethash +x-arg2+ (gethash "args" body-json)))
+      (is +user-agent+ (gethash "user-agent" (gethash "headers" body-json)))
+      (is +accept+ (gethash "accept" (gethash "headers" body-json)))
+      (is +x-value1+ (gethash +x-key1+ (gethash "headers" body-json)))
+      (is +x-value2+ (gethash +x-key2+ (gethash "headers" body-json))))))
 
 
 

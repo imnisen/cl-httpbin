@@ -556,7 +556,7 @@ This file contains some utils in cl-httpbin
           (gethash "json" h) (get-request-json)
           (gethash "files" h) (get-request-files)
           )
-    (print-hash h)
+    ;; (print-hash h)
     ;;(format t "~a" (get-request-files))
     (dolist (key keys)
       (if (consp key)
