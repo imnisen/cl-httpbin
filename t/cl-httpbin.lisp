@@ -20,30 +20,40 @@
 (defvar +origin+ "127.0.0.1")
 (defvar +host+ "127.0.0.1:5000")
 (defvar +status-ok+ 200)
-(defvar +x-key1+ "x-key1")
-(defvar +x-key2+ "x-key2")
-(defvar +x-value1+ "x-value1")
-(defvar +x-value2+ "x-value2")
-(defvar +x-arg1+ "x-arg1")
-(defvar +x-arg2+ "x-arg2")
-(defvar +x-v1+ "x-v1")
-(defvar +x-v2+ "x-v2")
-(defvar +content-k1+ "content-k1")
-(defvar +content-k2+ "content-k2")
-(defvar +content-v1+ "content-v1")
-(defvar +content-v2+ "content-v2")
 
-;; To finish
-;; (defmacro uri-to-url (uri &rest args)
-;;   (concatenate 'string
+(defvar +x-header-key1+ "x-header-key1")
+(defvar +x-header-key2+ "x-header-key2")
+(defvar +x-header-value1+ "x-header-value1")
+(defvar +x-header-value2+ "x-header-value2")
 
-;;                )
-;;   (let ((url (format nil "http://127.0.0.1~a" ,uri)))
-;;     (loop for x on args by #'cddr
-;;          (format "~a=~a")))
+(defvar +x-arg-key1+ "x-arg-key1")
+(defvar +x-arg-key2+ "x-arg-key2")
+(defvar +x-arg-value1+ "x-arg-value1")
+(defvar +x-arg-value2+ "x-arg-value2")
+
+(defvar +x-content-key1+ "x-content-key1")
+(defvar +x-content-key2+ "x-content-key2")
+(defvar +x-content-value1+ "x-content-value1")
+(defvar +x-content-value2+ "x-content-value2")
 
 
-;;   )
+(defun uri-to-url (uri &rest args)
+  (let ((url (format nil "http://127.0.0.1:5000~a" uri))
+        (arg-string nil))
+    (if args
+        (concatenate
+         'string
+         url
+         "?"
+         (format nil "~{~a~^&~}"
+                 (loop for x on args by #'cddr
+                    collect (concatenate
+                             'string
+                             arg-string
+                             (first x)
+                             "="
+                             (second x)))))
+        url)))
 
 
 
@@ -57,6 +67,8 @@
 (subtest "Testing /ip"
   (multiple-value-bind (body status)
       (dex:get (uri-to-url "/ip"))
+    (format t "~a~&" body)
+    (format t "~a~&" status)
     (is status +status-ok+)
     (is +origin+ (gethash "origin" (yason:parse body)))))
 
@@ -66,9 +78,8 @@
       (dex:get (uri-to-url "/headers")
                :headers `(("User-Agent" . ,+user-agent+)
                           ("Accept" . "*/*")
-                          (,+x-key1+ . ,+x-value1+)
-                          (,+x-key2+ . ,+x-value2+)))
-    (format t "~a" body)
+                          (,+x-header-key1+ . ,+x-header-value1+)
+                          (,+x-header-key2+ . ,+x-header-value2+)))
     (is status +status-ok+)
     (let* ((body-json (yason:parse body))
            (headers (gethash "headers" body-json)))
@@ -76,8 +87,8 @@
       (is +host+ (gethash "host" headers))
       (is +user-agent+ (gethash "user-agent" headers))
       (is +accept+ (gethash "accept" headers))
-      (is +x-value1+ (gethash +x-key1+ headers))
-      (is +x-value2+ (gethash +x-key2+ headers)))))
+      (is +x-header-value1+ (gethash +x-header-key1+ headers))
+      (is +x-header-value2+ (gethash +x-header-key2+ headers)))))
 
 
 (subtest "Testing /user-agent"
@@ -90,65 +101,185 @@
 
 (subtest "Testing /get"
   (multiple-value-bind (body status)
-      (dex:get (format nil "http://127.0.0.1:5000/get?~a=~a&~a=~a" +x-arg1+ +x-v1+ +x-arg2+ +x-v2+)
+      (dex:get (uri-to-url "/get" +x-arg-key1+ +x-arg-value1+ +x-arg-key2+ +x-arg-value2+)
                :headers `(("User-Agent" . ,+user-agent+)
                           ("Accept" . "*/*")
-                          (,+x-key1+ . ,+x-value1+)
-                          (,+x-key2+ . ,+x-value2+)))
+                          (,+x-header-key1+ . ,+x-header-value1+)
+                          (,+x-header-key2+ . ,+x-header-value2+)))
     (is status 200)
     (let* ((body-json (yason:parse body)))
       (is +origin+ (gethash "origin" body-json))
-      (is (format nil "http://127.0.0.1:5000/get?~a=~a&~a=~a" +x-arg1+ +x-v1+ +x-arg2+ +x-v2+) (gethash "url" body-json))
-      (is +x-v1+ (gethash +x-arg1+ (gethash "args" body-json)))
-      (is +x-v2+ (gethash +x-arg2+ (gethash "args" body-json)))
+      (is (uri-to-url "/get" +x-arg-key1+ +x-arg-value1+ +x-arg-key2+ +x-arg-value2+) (gethash "url" body-json))
+      (is +x-arg-value1+ (gethash +x-arg-key1+ (gethash "args" body-json)))
+      (is +x-arg-value2+ (gethash +x-arg-key2+ (gethash "args" body-json)))
       (is +user-agent+ (gethash "user-agent" (gethash "headers" body-json)))
       (is +accept+ (gethash "accept" (gethash "headers" body-json)))
-      (is +x-value1+ (gethash +x-key1+ (gethash "headers" body-json)))
-      (is +x-value2+ (gethash +x-key2+ (gethash "headers" body-json))))))
+      (is +x-header-value1+ (gethash +x-header-key1+ (gethash "headers" body-json)))
+      (is +x-header-value2+ (gethash +x-header-key2+ (gethash "headers" body-json))))))
 
 
 (subtest "Testing /anything"
   (multiple-value-bind (body status)
-      (dex:get "http://127.0.0.1:5000/anything")
+      (dex:get (uri-to-url "/anything"))
     (is status 200))
   (multiple-value-bind (body status)
-      (dex:post (format nil "http://127.0.0.1:5000/anything?~a=~a&~a=~a" +x-arg1+ +x-v1+ +x-arg2+ +x-v2+)
+      (dex:post (uri-to-url "/anything" +x-arg-key1+ +x-arg-value1+ +x-arg-key2+ +x-arg-value2+)
                 :headers `(("User-Agent" . ,+user-agent+)
                            ("Accept" . "*/*")
-                           (,+x-key1+ . ,+x-value1+)
-                           (,+x-key2+ . ,+x-value2+))
-                :content `((,+content-k1+ . ,+content-v1+)
-                           (,+content-k2+ . ,+content-v2+)))
-    (format t "~a" body)
+                           (,+x-header-key1+ . ,+x-header-value1+)
+                           (,+x-header-key2+ . ,+x-header-value2+))
+                :content `((,+x-content-key1+ . ,+x-content-value1+)
+                           (,+x-content-key2+ . ,+x-content-value2+)))
     (is status 200)
     (let* ((body-json (yason:parse body)))
       (is +origin+ (gethash "origin" body-json))
-      (is (format nil "http://127.0.0.1:5000/anything?~a=~a&~a=~a" +x-arg1+ +x-v1+ +x-arg2+ +x-v2+) (gethash "url" body-json))
-      (is +x-v1+ (gethash +x-arg1+ (gethash "args" body-json)))
-      (is +x-v2+ (gethash +x-arg2+ (gethash "args" body-json)))
+      (is (uri-to-url "/anything" +x-arg-key1+ +x-arg-value1+ +x-arg-key2+ +x-arg-value2+) (gethash "url" body-json))
+      (is +x-arg-value1+ (gethash +x-arg-key1+ (gethash "args" body-json)))
+      (is +x-arg-value2+ (gethash +x-arg-key2+ (gethash "args" body-json)))
       (is +user-agent+ (gethash "user-agent" (gethash "headers" body-json)))
       (is +accept+ (gethash "accept" (gethash "headers" body-json)))
-      (is +x-value1+ (gethash +x-key1+ (gethash "headers" body-json)))
-      (is +x-value2+ (gethash +x-key2+ (gethash "headers" body-json))))))
+      (is +x-header-value1+ (gethash +x-header-key1+ (gethash "headers" body-json)))
+      (is +x-header-value2+ (gethash +x-header-key2+ (gethash "headers" body-json)))
+      (is "application/x-www-form-urlencoded" (gethash "content-type" (gethash "headers" body-json)))
+      (is "post" (gethash "method" body-json))
+      (is +x-content-value1+ (gethash +x-content-key1+ (gethash "form" body-json)))
+      (is +x-content-value2+ (gethash +x-content-key2+ (gethash "form" body-json)))
+      ))
+  (multiple-value-bind (body status)
+      (dex:put (uri-to-url "/anything" +x-arg-key1+ +x-arg-value1+ +x-arg-key2+ +x-arg-value2+)
+               :headers `(("User-Agent" . ,+user-agent+)
+                          ("Accept" . "*/*")
+                          (,+x-header-key1+ . ,+x-header-value1+)
+                          (,+x-header-key2+ . ,+x-header-value2+))
+               :content `((,+x-content-key1+ . ,+x-content-value1+)
+                          (,+x-content-key2+ . ,+x-content-value2+)))
+    (is status 200)
+    (let* ((body-json (yason:parse body)))
+      (is "put" (gethash "method" body-json))))
+  (multiple-value-bind (body status)
+      (dex:delete (uri-to-url "/anything" +x-arg-key1+ +x-arg-value1+ +x-arg-key2+ +x-arg-value2+)
+                  :headers `(("User-Agent" . ,+user-agent+)
+                             ("Accept" . "*/*")
+                             (,+x-header-key1+ . ,+x-header-value1+)
+                             (,+x-header-key2+ . ,+x-header-value2+))                  )
+    (is status 200)
+    (let* ((body-json (yason:parse body)))
+      (is "delete" (gethash "method" body-json)))) )
+
+(subtest "Testing /post"
+  (multiple-value-bind (body status)
+      (dex:post (uri-to-url "/post" +x-arg-key1+ +x-arg-value1+ +x-arg-key2+ +x-arg-value2+)
+                :headers `(("User-Agent" . ,+user-agent+)
+                           ("Accept" . "*/*")
+                           (,+x-header-key1+ . ,+x-header-value1+)
+                           (,+x-header-key2+ . ,+x-header-value2+))
+                :content `((,+x-content-key1+ . ,+x-content-value1+)
+                           (,+x-content-key2+ . ,+x-content-value2+)))
+    (is status 200)
+    (let* ((body-json (yason:parse body)))
+      (is +origin+ (gethash "origin" body-json))
+      (is (uri-to-url "/post" +x-arg-key1+ +x-arg-value1+ +x-arg-key2+ +x-arg-value2+) (gethash "url" body-json))
+      (is +x-arg-value1+ (gethash +x-arg-key1+ (gethash "args" body-json)))
+      (is +x-arg-value2+ (gethash +x-arg-key2+ (gethash "args" body-json)))
+      (is +user-agent+ (gethash "user-agent" (gethash "headers" body-json)))
+      (is +accept+ (gethash "accept" (gethash "headers" body-json)))
+      (is +x-header-value1+ (gethash +x-header-key1+ (gethash "headers" body-json)))
+      (is +x-header-value2+ (gethash +x-header-key2+ (gethash "headers" body-json)))
+      (is "application/x-www-form-urlencoded" (gethash "content-type" (gethash "headers" body-json)))
+      (is +x-content-value1+ (gethash +x-content-key1+ (gethash "form" body-json)))
+      (is +x-content-value2+ (gethash +x-content-key2+ (gethash "form" body-json)))
+      )))
+
+(subtest "Testing /put"
+  (multiple-value-bind (body status)
+      (dex:put (uri-to-url "/put" +x-arg-key1+ +x-arg-value1+ +x-arg-key2+ +x-arg-value2+)
+               :headers `(("User-Agent" . ,+user-agent+)
+                          ("Accept" . "*/*")
+                          (,+x-header-key1+ . ,+x-header-value1+)
+                          (,+x-header-key2+ . ,+x-header-value2+))
+               :content `((,+x-content-key1+ . ,+x-content-value1+)
+                          (,+x-content-key2+ . ,+x-content-value2+)))
+    (is status 200)
+    (let* ((body-json (yason:parse body)))
+      (is +origin+ (gethash "origin" body-json))
+      (is (uri-to-url "/put" +x-arg-key1+ +x-arg-value1+ +x-arg-key2+ +x-arg-value2+) (gethash "url" body-json))
+      (is +x-arg-value1+ (gethash +x-arg-key1+ (gethash "args" body-json)))
+      (is +x-arg-value2+ (gethash +x-arg-key2+ (gethash "args" body-json)))
+      (is +user-agent+ (gethash "user-agent" (gethash "headers" body-json)))
+      (is +accept+ (gethash "accept" (gethash "headers" body-json)))
+      (is +x-header-value1+ (gethash +x-header-key1+ (gethash "headers" body-json)))
+      (is +x-header-value2+ (gethash +x-header-key2+ (gethash "headers" body-json)))
+      (is "application/x-www-form-urlencoded" (gethash "content-type" (gethash "headers" body-json)))
+      (is +x-content-value1+ (gethash +x-content-key1+ (gethash "form" body-json)))
+      (is +x-content-value2+ (gethash +x-content-key2+ (gethash "form" body-json)))
+      )))
+
+(subtest "Testing /patch"
+  (multiple-value-bind (body status)
+      (dex:patch (uri-to-url "/patch" +x-arg-key1+ +x-arg-value1+ +x-arg-key2+ +x-arg-value2+)
+                 :headers `(("User-Agent" . ,+user-agent+)
+                            ("Accept" . "*/*")
+                            (,+x-header-key1+ . ,+x-header-value1+)
+                            (,+x-header-key2+ . ,+x-header-value2+))
+                 :content `((,+x-content-key1+ . ,+x-content-value1+)
+                            (,+x-content-key2+ . ,+x-content-value2+)))
+    (is status 200)
+    (let* ((body-json (yason:parse body)))
+      (is +origin+ (gethash "origin" body-json))
+      (is (uri-to-url "/patch" +x-arg-key1+ +x-arg-value1+ +x-arg-key2+ +x-arg-value2+) (gethash "url" body-json))
+      (is +x-arg-value1+ (gethash +x-arg-key1+ (gethash "args" body-json)))
+      (is +x-arg-value2+ (gethash +x-arg-key2+ (gethash "args" body-json)))
+      (is +user-agent+ (gethash "user-agent" (gethash "headers" body-json)))
+      (is +accept+ (gethash "accept" (gethash "headers" body-json)))
+      (is +x-header-value1+ (gethash +x-header-key1+ (gethash "headers" body-json)))
+      (is +x-header-value2+ (gethash +x-header-key2+ (gethash "headers" body-json)))
+      (is "application/x-www-form-urlencoded" (gethash "content-type" (gethash "headers" body-json)))
+      (is +x-content-value1+ (gethash +x-content-key1+ (gethash "form" body-json)))
+      (is +x-content-value2+ (gethash +x-content-key2+ (gethash "form" body-json)))
+      )))
+
+(subtest "Testing /delete"
+  (multiple-value-bind (body status)
+      (dex:delete (uri-to-url "/delete" +x-arg-key1+ +x-arg-value1+ +x-arg-key2+ +x-arg-value2+)
+                  :headers `(("User-Agent" . ,+user-agent+)
+                             ("Accept" . "*/*")
+                             (,+x-header-key1+ . ,+x-header-value1+)
+                             (,+x-header-key2+ . ,+x-header-value2+)))
+    (is status 200)
+    (let* ((body-json (yason:parse body)))
+      (is +origin+ (gethash "origin" body-json))
+      (is (uri-to-url "/delete" +x-arg-key1+ +x-arg-value1+ +x-arg-key2+ +x-arg-value2+) (gethash "url" body-json))
+      (is +x-arg-value1+ (gethash +x-arg-key1+ (gethash "args" body-json)))
+      (is +x-arg-value2+ (gethash +x-arg-key2+ (gethash "args" body-json)))
+      (is +user-agent+ (gethash "user-agent" (gethash "headers" body-json)))
+      (is +accept+ (gethash "accept" (gethash "headers" body-json)))
+      (is +x-header-value1+ (gethash +x-header-key1+ (gethash "headers" body-json)))
+      (is +x-header-value2+ (gethash +x-header-key2+ (gethash "headers" body-json)))
+      )))
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+(subtest "Testing /gzip"
+  (multiple-value-bind (body status)
+      (dex:get (uri-to-url "/gzip" +x-arg-key1+ +x-arg-value1+ +x-arg-key2+ +x-arg-value2+)
+               :headers `(("User-Agent" . ,+user-agent+)
+                          ("Accept" . "*/*")
+                          (,+x-header-key1+ . ,+x-header-value1+)
+                          (,+x-header-key2+ . ,+x-header-value2+))
+               :force-binary t)
+    (is status 200)
+    (format t "~a" body)
+    (format t "~a" (type-of body))
+    ;; (let* ((body-json (yason:parse body)))
+    ;;   (is +origin+ (gethash "origin" body-json))
+    ;;   (is (uri-to-url "/anything" +x-arg-key1+ +x-arg-value1+ +x-arg-key2+ +x-arg-value2+) (gethash "url" body-json))
+    ;;   (is +x-arg-value1+ (gethash +x-arg-key1+ (gethash "args" body-json)))
+    ;;   (is +x-arg-value2+ (gethash +x-arg-key2+ (gethash "args" body-json)))
+    ;;   (is +user-agent+ (gethash "user-agent" (gethash "headers" body-json)))
+    ;;   (is +accept+ (gethash "accept" (gethash "headers" body-json)))
+    ;;   (is +x-header-value1+ (gethash +x-header-key1+ (gethash "headers" body-json)))
+    ;;   (is +x-header-value2+ (gethash +x-header-key2+ (gethash "headers" body-json)))
+    ;;   )
+    ))
 
 
 

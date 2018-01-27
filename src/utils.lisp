@@ -449,9 +449,10 @@ This file contains some utils in cl-httpbin
 
 ;; helper function, 考虑移到get-request-files函数内部
 (defun filter-files-parameters (all-list)
-  (remove-if-not
-   #'(lambda (x) (typep (second x) 'stream))
-   all-list))
+  (when all-list
+    (remove-if-not
+     #'(lambda (x) (typep (cdr x) 'stream))
+     all-list)))
 
 ;; helper function, 考虑移到get-request-files函数内部
 (defun produce-return-content (v v2)
