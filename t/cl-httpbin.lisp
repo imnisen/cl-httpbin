@@ -258,31 +258,26 @@
       )))
 
 
+
 (subtest "Testing /gzip"
-  (multiple-value-bind (body status)
-      (dex:get (uri-to-url "/gzip" +x-arg-key1+ +x-arg-value1+ +x-arg-key2+ +x-arg-value2+)
-               :headers `(("User-Agent" . ,+user-agent+)
-                          ("Accept" . "*/*")
-                          (,+x-header-key1+ . ,+x-header-value1+)
-                          (,+x-header-key2+ . ,+x-header-value2+))
-               :force-binary t)
-    (is status 200)
-    (format t "~a" body)
-    (format t "~a" (type-of body))
-    ;; (let* ((body-json (yason:parse body)))
-    ;;   (is +origin+ (gethash "origin" body-json))
-    ;;   (is (uri-to-url "/anything" +x-arg-key1+ +x-arg-value1+ +x-arg-key2+ +x-arg-value2+) (gethash "url" body-json))
-    ;;   (is +x-arg-value1+ (gethash +x-arg-key1+ (gethash "args" body-json)))
-    ;;   (is +x-arg-value2+ (gethash +x-arg-key2+ (gethash "args" body-json)))
-    ;;   (is +user-agent+ (gethash "user-agent" (gethash "headers" body-json)))
-    ;;   (is +accept+ (gethash "accept" (gethash "headers" body-json)))
-    ;;   (is +x-header-value1+ (gethash +x-header-key1+ (gethash "headers" body-json)))
-    ;;   (is +x-header-value2+ (gethash +x-header-key2+ (gethash "headers" body-json)))
-    ;;   )
+  (multiple-value-bind (body)
+      (drakma:http-request (uri-to-url "/gzip")
+                           :method :get
+                           :user-agent +user-agent+)
+    (labels ((transfer-data (data)
+               (make-array (length data)
+                           :element-type '(unsigned-byte 8)
+                           :initial-contents data))
+             (ungzip (data)
+               (chipz:decompress nil 'chipz:gzip (transfer-data data))))
+      (let* ((body-string (flexi-streams:octets-to-string (ungzip body)))
+             (body-json (yason:parse body-string)))
+        (is +origin+ (gethash "origin" body-json))
+        (is "get" (gethash "method" body-json))
+        (is t  (gethash "gziped" body-json))
+        (is +user-agent+ (gethash "user-agent" (gethash "headers" body-json)))
+        ))
     ))
-
-
-
 
 
 (ok (cl-httpbin:stop) "Server Stopped ?")
