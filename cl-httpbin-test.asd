@@ -14,7 +14,9 @@
   :depends-on (:cl-httpbin
                :prove
                :dexador
-               :yason)
+               :yason
+               :drakma
+               :chipz)
   :components ((:module "t"
                         :components
                         ((:test-file "cl-httpbin"))))

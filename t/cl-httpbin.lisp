@@ -279,6 +279,26 @@
         ))
     ))
 
+(subtest "Testing /deflate"
+  (multiple-value-bind (body)
+      (drakma:http-request (uri-to-url "/deflate")
+                           :method :get
+                           :user-agent +user-agent+)
+    (labels ((transfer-data (data)
+               (make-array (length data)
+                           :element-type '(unsigned-byte 8)
+                           :initial-contents data))
+             (undeflate (data)
+               (chipz:decompress nil 'chipz:deflate (transfer-data data))))
+      (let* ((body-string (flexi-streams:octets-to-string (undeflate body)))
+             (body-json (yason:parse body-string)))
+        (is +origin+ (gethash "origin" body-json))
+        (is "get" (gethash "method" body-json))
+        (is t  (gethash "deflated" body-json))
+        (is +user-agent+ (gethash "user-agent" (gethash "headers" body-json)))
+        ))
+    ))
+
 
 (ok (cl-httpbin:stop) "Server Stopped ?")
 
