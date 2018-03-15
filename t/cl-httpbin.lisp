@@ -36,6 +36,19 @@
 (defvar +x-content-value1+ "x-content-value1")
 (defvar +x-content-value2+ "x-content-value2")
 
+(defvar +ASCII-ART+ "
+    -=[ teapot ]=-
+
+       _...._
+     .'  _ _ `.
+    | .'` ^ `. _,
+    \_;`---`|//
+      |       ;/
+      \_     _/
+        `\"\"\"`
+")
+
+
 
 (defun uri-to-url (uri &rest args)
   (let ((url (format nil "http://127.0.0.1:5000~a" uri))
@@ -300,8 +313,208 @@
     ))
 
 
+(subtest "Testing /redirect-to"
+  (multiple-value-bind (body status response-header)
+      (dex:get (uri-to-url "/redirect-to" "status_code" "307" "url" "http://www.163.com") :max-redirects 0)
+    (is status 307)
+    (is "http://www.163.com" (gethash "location" response-header))
+    )
+  (multiple-value-bind (body status response-header)
+      (dex:get (uri-to-url "/redirect-to" "status_code" "200" "url" "http://www.163.com") :max-redirects 0)
+    (is status 302)
+    (is "http://www.163.com" (gethash "location" response-header))
+    )
+  (multiple-value-bind (body status response-header)
+      (dex:get (uri-to-url "/redirect-to" "status_code" "200" "url" "http://www.163.com"))
+    (is status 200)
+    (like body "网易")
+    ))
+
+(subtest "Testing /redirect/:n"
+  (multiple-value-bind (body status response-header)
+      (dex:get (uri-to-url "/redirect/4" "absolute" "true") :max-redirects 0)
+    (is status 302)
+    (is "http://127.0.0.1:5000/absolute-redirect/3" (gethash "location" response-header))
+    )
+  (multiple-value-bind (body status response-header)
+      (dex:get (uri-to-url "/redirect/4" "absolute" "true") :max-redirects 1)
+    (is status 302)
+    (is "http://127.0.0.1:5000/absolute-redirect/2" (gethash "location" response-header))
+    )
+  (multiple-value-bind (body status response-header)
+      (dex:get (uri-to-url "/redirect/4" "absolute" "true") :max-redirects 2)
+    (is status 302)
+    (is "http://127.0.0.1:5000/absolute-redirect/1" (gethash "location" response-header))
+    )
+
+  (multiple-value-bind (body status response-header)
+      (dex:get (uri-to-url "/redirect/4" "absolute" "true") :max-redirects 3)
+    (is status 302)
+    (is  "http://127.0.0.1:5000/get" (gethash "location" response-header))
+    )
+  (multiple-value-bind (body status)
+      (dex:get (uri-to-url "/redirect/4" "absolute" "true"))
+    (is status 200)
+    (let* ((body-json (yason:parse body)))
+      (is +origin+ (gethash "origin" body-json))
+      (is (uri-to-url "/get") (gethash "url" body-json)))
+    )
+
+
+  (multiple-value-bind (body status response-header)
+      (dex:get (uri-to-url "/redirect/4") :max-redirects 0)
+    (is status 302)
+    (is "/relative-redirect/3" (gethash "location" response-header))
+    )
+  (multiple-value-bind (body status response-header)
+      (dex:get (uri-to-url "/redirect/4") :max-redirects 1)
+    (is status 302)
+    (is "/relative-redirect/2" (gethash "location" response-header))
+    )
+  (multiple-value-bind (body status response-header)
+      (dex:get (uri-to-url "/redirect/4") :max-redirects 2)
+    (is status 302)
+    (is "/relative-redirect/1" (gethash "location" response-header))
+    )
+
+  (multiple-value-bind (body status response-header)
+      (dex:get (uri-to-url "/redirect/4") :max-redirects 3)
+    (is status 302)
+    (is  "/get" (gethash "location" response-header))
+    )
+  (multiple-value-bind (body status)
+      (dex:get (uri-to-url "/redirect/4"))
+    (is status 200)
+    (let* ((body-json (yason:parse body)))
+      (is +origin+ (gethash "origin" body-json))
+      (is (uri-to-url "/get") (gethash "url" body-json)))
+    )
+  )
+
+
+(subtest "Testing /relative-redirect/:n"
+  (multiple-value-bind (body status response-header)
+      (dex:get (uri-to-url "/relative-redirect/2") :max-redirects 0)
+    (is status 302)
+    (is "/relative-redirect/1" (gethash "location" response-header))
+    )
+  (multiple-value-bind (body status)
+      (dex:get (uri-to-url "/relative-redirect/2"))
+    (is status 200)
+    (let* ((body-json (yason:parse body)))
+      (is +origin+ (gethash "origin" body-json))
+      (is (uri-to-url "/get") (gethash "url" body-json)))
+    )
+  )
+
+(subtest "Testing /absolute-redirect/:n"
+  (multiple-value-bind (body status response-header)
+      (dex:get (uri-to-url "/absolute-redirect/2") :max-redirects 0)
+    (is status 302)
+    (is "http://127.0.0.1:5000/absolute-redirect/1" (gethash "location" response-header))
+    )
+  (multiple-value-bind (body status)
+      (dex:get (uri-to-url "/absolute-redirect/2"))
+    (is status 200)
+    (let* ((body-json (yason:parse body)))
+      (is +origin+ (gethash "origin" body-json))
+      (is (uri-to-url "/get") (gethash "url" body-json)))
+    )
+  )
+
+
+(subtest "Testing /status/:codes"
+  (multiple-value-bind (body status response-header)
+      (dex:get (uri-to-url "/status/200"))
+    (is status 200))
+
+  (multiple-value-bind (body status response-header)
+      (dex:get (uri-to-url "/status/302") :max-redirects 0)
+    (is status 302)
+    (is "/redirect/1" (gethash "location" response-header)))
+
+
+  ;; dex when response code 4xx 5xx, it will rasie error, which make case complicated, so use drakma
+  (multiple-value-bind (body status response-header)
+      (drakma:http-request (uri-to-url "/status/401"))
+    (is status 401)
+    (is "Basic realm=\"Fake Realm\"" (cdr (assoc :www-authenticate response-header)))
+    )
+
+  (multiple-value-bind (body status response-header)
+      (drakma:http-request (uri-to-url "/status/402"))
+    (is body "Fuck you, pay me!")
+    (is status 402)
+    (is "http://vimeo.com/22053820" (cdr (assoc :x-more-info response-header)))
+    )
+
+  (multiple-value-bind (body status response-header)
+      (drakma:http-request (uri-to-url "/status/406"))
+    (let* ((body-json (yason:parse (flexi-streams:octets-to-string body))))
+      (is "Client did not request a supported media type." (gethash "message" body-json))
+      (is '("image/webp" "image/svg+xml" "image/jpeg" "image/png" "image/*")
+          (gethash "accept" body-json)))
+    (is status 406)
+    (is "application/json" (cdr (assoc :content-type response-header)))
+    )
+
+  (multiple-value-bind (body status response-header)
+      (drakma:http-request (uri-to-url "/status/407"))
+    (is status 407)
+    (is "Basic realm=\"Fake Realm\"" (cdr (assoc :proxy-authenticate response-header)))
+    )
+
+  (multiple-value-bind (body status response-header)
+      (drakma:http-request (uri-to-url "/status/418"))
+    (is body +ASCII-ART+)
+    (is status 418)
+    (is "http://tools.ietf.org/html/rfc2324" (cdr (assoc :x-more-info response-header)))
+    )
+
+  (multiple-value-bind (body status response-header)
+      (drakma:http-request (uri-to-url "/status/200:0,201:1"))
+    (is status 201)
+    )
+
+
+  )
+
+
+
+
+
+
+
+
+
+
+
+
 (ok (cl-httpbin:stop) "Server Stopped ?")
 
 
 
 (finalize)
+
+
+;; Log headers to the REPL output stream
+;; In some of the following examples, the headers exchanged between Drakma and the HTTP server should be shown, for illustration purposes. This can be achieved like so:
+
+;; ? (setf drakma:*header-stream* *standard-output*)
+;; #<SYNONYM-STREAM to *TERMINAL-IO* #x3020006AC7DD>
+
+;; (defmacro test ()
+;;   `(asdf:test-system :cl-httpbin))
+
+;; (defmacro start ()
+;;   `(cl-httpbin:start))
+
+;; (defmacro stop ()
+;;   `(cl-httpbin:stop))
+
+;; (defun print-hash (h)
+;;   (format t "----hashtable begin-----")
+;;   (loop for k being the hash-keys of h
+;;      using (hash-value v)
+;;      do (format t "~& ~a => ~a~&" k v))
+;;   (format t "----hashtable end -----"))

@@ -180,37 +180,26 @@
                           :external t)))
             nil)))
 
-;; ;; httpbin中是使用generator实现的，在这里我还不知道怎么实现同样的东西，就先这么做
+
+;; todo later
 ;; (setf (ningle:route *app* "/stream/:n")
 ;;       #'(lambda (params)
-;;           (let* ((n (make-sure-number (cdr (assoc :n params))))
-;;                  (n (min n 100))
-;;                  (res '()))
-;;             (set-response-content-type "application/json")
-;;             (loop for i below n
-;;                do (setf res (append res (make-sure-list (get-json-response "url" "args" "headers" "origin" (list "id" i))))))
-;;             (format nil "~{~a~%~}" res)
-;;             )))
-
-
-(setf (ningle:route *app* "/stream/:n")
-      #'(lambda (params)
-          (set-response-content-type "application/json")
-          (let ((n (make-sure-number (cdr (assoc :n params))))
-                (hash-response (get-hash-response "url" "args" "headers" "origin")))
-            (flet ((generate-stream () (snakes:with-yield
-                                           (loop for i below n do
-                                                (snakes:yield
-                                                 (json:encode-json-to-string
-                                                  (progn
-                                                    (setf (gethash "i" hash-response) i)
-                                                    hash-response)
-                                                  ))))))
-              ;; 这里本来打算直接将生成器generate-stream返回的，但不知道是什么原因是clack还是哪个部分不能处理生成器返回，所以这里做完生成器后又手动调用将结果都取出来拼成字符串返回了
-              (format nil "~{~a~%~}" (loop with g = (generate-stream)
-                                        for val = (funcall g)
-                                        until (eq 'generator-stop val)
-                                        collecting val))))))
+;;           (set-response-content-type "application/json")
+;;           (let ((n (make-sure-number (cdr (assoc :n params))))
+;;                 (hash-response (get-hash-response "url" "args" "headers" "origin")))
+;;             (flet ((generate-stream () (snakes:with-yield
+;;                                          (loop for i below n do
+;;                                               (snakes:yield
+;;                                                (json:encode-json-to-string
+;;                                                 (progn
+;;                                                   (setf (gethash "i" hash-response) i)
+;;                                                   hash-response)
+;;                                                 ))))))
+;;               ;; 这里本来打算直接将生成器generate-stream返回的，但不知道是什么原因是clack还是哪个部分不能处理生成器返回，所以这里做完生成器后又手动调用将结果都取出来拼成字符串返回了
+;;               (format nil "~{~a~%~}" (loop with g = (generate-stream)
+;;                                         for val = (funcall g)
+;;                                         until (eq 'generator-stop val)
+;;                                         collecting val))))))
 
 
 

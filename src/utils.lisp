@@ -502,8 +502,8 @@ This file contains some utils in cl-httpbin
 
 (defun set-response-headers (set-headers)
   (setf (lack.response:response-headers ningle:*response*)
-        (append (print-and-return (lack.response:response-headers ningle:*response*))
-                (print-and-return set-headers))))
+        (append (lack.response:response-headers ningle:*response*)
+                set-headers)))
 
 
 ;; TODO 这边定义一些map太繁琐了，很有必要引入map字面量
